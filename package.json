@@ -1,0 +1,17 @@
+{
+  "name": "betlehem-bot",
+  "version": "1.0.0",
+  "description": "Gaming Lounge Discord Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "R Gang",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "@discordjs/voice": "^0.17.0",
+    "express": "^5.2.1",
+    "dotenv": "^16.4.5"
+  }
+}
