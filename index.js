@@ -77,7 +77,7 @@ async function sendPanel(channel) {
       'Menu ini digunakan untuk membuat Gaming Lounge.\n\n' +
       '**Cara Menggunakannya:**\n' +
       `Silahkan masuk ke <#${CREATE_CHANNEL_ID}> lalu pilih game melalui menu dibawah ini.\n\n` +
-      'Jika ada masalah dengan Gaming Lounge. Silahkan hubungi **STAFF**.\n\n' +
+      'Jika ada masalah dengan Gaming Lounge. Silahkan hubungi **ADMIN/PENJAGA**.\n\n' +
       'Marun - ©2018 BETLEHEM'
     );
 
