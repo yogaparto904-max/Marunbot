@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const express = require("express");
 const app = express();
 
@@ -8,7 +6,6 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Web server jalan");
 });
@@ -37,7 +34,7 @@ const TOKEN = process.env.TOKEN;
 const CREATE_CHANNEL_ID = '1488240217268687115';
 const CATEGORY_ID = '1488160144981495888';
 const PANEL_CHANNEL_ID = '1488175079417446603';
-const AUTO_VC_ID = "1488854856633680083"; // 🔥 VC khusus bot
+const AUTO_VC_ID = "1488854856633680083"; // 🔥 TAMBAHAN (VC BOT)
 
 const userSelectedGame = new Map();
 
@@ -75,50 +72,50 @@ const gameData = {
 // ================= PANEL =================
 async function sendPanel(channel) {
   const embed = new EmbedBuilder()
-    .setTitle('Game Lounge')
+    .setTitle('BETLEHEM Game Lounge')
     .setDescription(
       'Menu ini digunakan untuk membuat Gaming Lounge.\n\n' +
       '**Cara Menggunakannya:**\n' +
       `Silahkan masuk ke <#${CREATE_CHANNEL_ID}> lalu pilih game melalui menu dibawah ini.\n\n` +
-      'Jika ada masalah hubungi **STAFF**.\n\n' +
-      'Upin - ©2018 Asosiasi Plenger'
+      'Jika ada masalah dengan Gaming Lounge. Silahkan hubungi **STAFF**.\n\n' +
+      'Marun - ©2018 BETLEHEM'
     );
 
   const pcMenu = new StringSelectMenuBuilder()
     .setCustomId('pc_games')
     .setPlaceholder('PC Game List')
     .addOptions([
-      { label: 'Apex Legends', value: 'Apex Legends' },
-      { label: 'Counter-Strike 2', value: 'Counter-Strike 2' },
-      { label: 'Dota 2', value: 'Dota 2' },
-      { label: 'Fortnite', value: 'Fortnite' },
-      { label: 'GTA V', value: 'GTA V' },
-      { label: 'League of Legends', value: 'League of Legends' },
-      { label: 'Minecraft', value: 'Minecraft' },
-      { label: 'Point Blank', value: 'Point Blank' },
-      { label: "PlayerUnknown's Battlegrounds", value: "PlayerUnknown's Battlegrounds" },
-      { label: 'Rainbow Six Siege', value: 'Rainbow Six Siege' },
-      { label: 'Valorant', value: 'Valorant' }
+      { label: 'Apex Legends', value: 'Apex Legends', description: 'Limit Room: 3 users', emoji: { id: '1488234574109610096' } },
+      { label: 'Counter-Strike 2', value: 'Counter-Strike 2', description: 'Limit Room: 5 users', emoji: { id: '1488229246441754744' } },
+      { label: 'Dota 2', value: 'Dota 2', description: 'Limit Room: 5 users', emoji: { id: '1488225450865066064' } },
+      { label: 'Fortnite', value: 'Fortnite', description: 'Limit Room: 4 users', emoji: { id: '1488229574780391434' } },
+      { label: 'GTA V', value: 'GTA V', description: 'Limit Room: 32 users', emoji: { id: '1488229820977516666' } },
+      { label: 'League of Legends', value: 'League of Legends', description: 'Limit Room: 5 users', emoji: { id: '1488230038808821851' } },
+      { label: 'Minecraft', value: 'Minecraft', description: 'Limit Room: 30 users', emoji: { id: '1488230360260284488' } },
+      { label: 'Point Blank', value: 'Point Blank', description: 'Limit Room: 8 users', emoji: { id: '1488230516355240037' } },
+      { label: "PlayerUnknown's Battlegrounds", value: "PlayerUnknown's Battlegrounds", description: 'Limit Room: 4 users', emoji: { id: '1488230934602973325' } },
+      { label: 'Rainbow Six Siege', value: 'Rainbow Six Siege', description: 'Limit Room: 5 users', emoji: { id: '1488231298135752748' } },
+      { label: 'Valorant', value: 'Valorant', description: 'Limit Room: 5 users', emoji: { id: '1488225389724700724' } }
     ]);
 
   const mobileMenu = new StringSelectMenuBuilder()
     .setCustomId('mobile_games')
     .setPlaceholder('Mobile Game List')
     .addOptions([
-      { label: 'Among Us', value: 'Among Us' },
-      { label: 'Arena of Valor', value: 'Arena of Valor' },
-      { label: 'Apex Legends Mobile', value: 'Apex Legends Mobile' },
-      { label: 'Call of Duty Mobile', value: 'Call of Duty Mobile' },
-      { label: 'Free Fire', value: 'Free Fire' },
-      { label: 'Genshin Impact', value: 'Genshin Impact' },
-      { label: 'LoL: Wild Rift', value: 'LoL: Wild Rift' },
-      { label: 'Mobile Legends', value: 'Mobile Legends' },
-      { label: 'Pokemon Unite', value: 'Pokemon Unite' },
-      { label: 'PUBG Mobile', value: 'PUBG Mobile' },
-      { label: 'Sausage Man', value: 'Sausage Man' },
-      { label: 'Super Sus', value: 'Super Sus' },
-      { label: 'Stumble Guys', value: 'Stumble Guys' },
-      { label: 'Honor of Kings', value: 'Honor of Kings' }
+      { label: 'Among Us', value: 'Among Us', description: 'Limit Room: 15 users', emoji: { id: '1488232855724101853' } },
+      { label: 'Arena of Valor', value: 'Arena of Valor', description: 'Limit Room: 5 users', emoji: { id: '1488232953292001452' } },
+      { label: 'Apex Legends Mobile', value: 'Apex Legends Mobile', description: 'Limit Room: 3 users', emoji: { id: '1488233017087492167' } },
+      { label: 'Call of Duty Mobile', value: 'Call of Duty Mobile', description: 'Limit Room: 5 users', emoji: { id: '1488233107642515496' } },
+      { label: 'Free Fire', value: 'Free Fire', description: 'Limit Room: 4 users', emoji: { id: '1488233144732876820' } },
+      { label: 'Genshin Impact', value: 'Genshin Impact', description: 'Limit Room: 4 users', emoji: { id: '1488233389638156391' } },
+      { label: 'LoL: Wild Rift', value: 'LoL: Wild Rift', description: 'Limit Room: 5 users', emoji: { id: '1488233476292608171' } },
+      { label: 'Mobile Legends', value: 'Mobile Legends', description: 'Limit Room: 5 users', emoji: { id: '1488225517113966673' } },
+      { label: 'Pokemon Unite', value: 'Pokemon Unite', description: 'Limit Room: 5 users', emoji: { id: '1488233568042750144' } },
+      { label: 'PUBG Mobile', value: 'PUBG Mobile', description: 'Limit Room: 4 users', emoji: { id: '1488233818153418824' } },
+      { label: 'Sausage Man', value: 'Sausage Man', description: 'Limit Room: 4 users', emoji: { id: '1488233909241118721' } },
+      { label: 'Super Sus', value: 'Super Sus', description: 'Limit Room: 10 users', emoji: { id: '1488233979168559257' } },
+      { label: 'Stumble Guys', value: 'Stumble Guys', description: 'Limit Room: 32 users', emoji: { id: '1488234053906989126' } },
+      { label: 'Honor of Kings', value: 'Honor of Kings', description: 'Limit Room: 5 users', emoji: { id: '1488234145787154653' } }
     ]);
 
   await channel.send({
@@ -137,7 +134,7 @@ client.once('clientReady', async () => {
   const channel = await client.channels.fetch(PANEL_CHANNEL_ID);
   if (channel) sendPanel(channel);
 
-  // ===== AUTO JOIN VC =====
+  // 🔥 AUTO JOIN VC (TAMBAHAN DOANG)
   try {
     const guild = client.guilds.cache.first();
     if (!guild) return;
@@ -152,9 +149,9 @@ client.once('clientReady', async () => {
       selfDeaf: false
     });
 
-    console.log("Auto join VC aktif");
+    console.log("Bot auto join VC");
   } catch (err) {
-    console.log("Gagal auto join:", err);
+    console.log(err);
   }
 });
 
@@ -173,7 +170,7 @@ async function createRoom(member, game) {
   userSelectedGame.delete(member.id);
 }
 
-// ================= SELECT MENU =================
+// ================= SELECT =================
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
 
@@ -184,15 +181,11 @@ client.on('interactionCreate', async (interaction) => {
 
   if (member.voice.channel && member.voice.channel.id === CREATE_CHANNEL_ID) {
     await createRoom(member, game);
-
-    return interaction.reply({
-      content: `🚀 Room **${game}** berhasil dibuat!`,
-      ephemeral: true
-    });
+    return interaction.reply({ content: `🚀 Room ${game} berhasil dibuat!`, ephemeral: true });
   }
 
   await interaction.reply({
-    content: `✅ Game dipilih: **${game}**\nMasuk ke <#${CREATE_CHANNEL_ID}>`,
+    content: `✅ Game dipilih: ${game}\nMasuk ke <#${CREATE_CHANNEL_ID}>`,
     ephemeral: true
   });
 });
@@ -204,10 +197,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     oldState.channelId !== CREATE_CHANNEL_ID
   ) {
     const game = userSelectedGame.get(newState.member.id);
-
-    if (game) {
-      await createRoom(newState.member, game);
-    }
+    if (game) await createRoom(newState.member, game);
   }
 
   if (
