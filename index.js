@@ -174,7 +174,7 @@ async function createRoom(member, game) {
   const limit = gameData[game] || 5;
 
   const channel = await member.guild.channels.create({
-    name: `🎮 ${game}｜${member.user.username}`,
+    name: `🎮 ${game}`,
     type: ChannelType.GuildVoice,
     parent: CATEGORY_ID,
     userLimit: limit
@@ -201,7 +201,7 @@ client.on("interactionCreate", async interaction => {
 
   setTimeout(() => {
     userSelectedGame.set(interaction.user.id, game);
-  }, 500);
+  }, 300);
 
   const member = await interaction.guild.members.fetch(interaction.user.id);
 
@@ -212,13 +212,21 @@ client.on("interactionCreate", async interaction => {
     await createRoom(member, game);
 
     return interaction.followUp({
-      content: `🚀 Room ${game} berhasil dibuat!`,
+      embeds: [
+        new EmbedBuilder()
+          .setDescription(`🚀 Room **${game}** berhasil dibuat!`)
+      ],
       ephemeral: true
     });
   }
 
   await interaction.followUp({
-    content: `✅ Game dipilih: ${game}\nMasuk ke <#${CREATE_CHANNEL_ID}>`,
+    embeds: [
+      new EmbedBuilder()
+        .setDescription(
+          `✅ Game dipilih: **${game}**\nMasuk ke <#${CREATE_CHANNEL_ID}>`
+        )
+    ],
     ephemeral: true
   });
 });
