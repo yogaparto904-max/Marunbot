@@ -1,17 +1,19 @@
 {
-  "name": "betlehem-bot",
+  "name": "marun-bot",
   "version": "1.0.0",
-  "description": "Gaming Lounge Discord Bot",
+  "description": "Game lounge bot + auto voice",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "author": "R Gang",
-  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
-    "discord.js": "^14.25.1",
-    "@discordjs/voice": "^0.17.0",
-    "express": "^5.2.1",
+    "discord.js": "^14.28.1",
+    "@discordjs/voice": "^0.19.2",
+    "libsodium-wrappers": "^0.8.4",
+    "express": "^4.21.2",
     "dotenv": "^16.4.5"
   }
 }
