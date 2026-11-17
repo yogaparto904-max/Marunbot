@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const app = express();
 
@@ -17,10 +19,15 @@ const {
   ChannelType,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  EmbedBuilder
+  EmbedBuilder,
+  MessageFlags
 } = require("discord.js");
 
-const { joinVoiceChannel } = require("@discordjs/voice");
+const {
+  joinVoiceChannel,
+  VoiceConnectionStatus,
+  entersState
+} = require("@discordjs/voice");
 
 const client = new Client({
   intents: [
@@ -30,12 +37,20 @@ const client = new Client({
   ]
 });
 
+// =======================
+// ⚙️ CONFIG
+// =======================
 const TOKEN = process.env.TOKEN;
 
 const CREATE_CHANNEL_ID = "1488240217268687115";
 const CATEGORY_ID = "1488160144981495888";
 const PANEL_CHANNEL_ID = "1488175079417446603";
 const AUTO_VC_ID = "1488854856633680083";
+
+const PANEL_TITLE = "BETLEHEM Game Lounge";
+const ROOM_PREFIX = "🎮 ";
+const LOGO_URL = "https://media.discordapp.net/attachments/1487590787284734143/1492050545219862598/bthl.png";
+const FOOTER_TEXT = "Marun • Copyright ©2018 - BETLEHEM";
 
 const userSelectedGame = new Map();
 
@@ -69,20 +84,60 @@ const gameData = {
   "Honor of Kings": 5
 };
 
-async function sendPanel(channel) {
-  const embed = new EmbedBuilder()
-    .setTitle("BETLEHEM Game Lounge")
-    .setDescription(
-      "Menu ini digunakan untuk membuat Gaming Lounge.\n\n" +
-      "**Cara Menggunakannya:**\n" +
-      `Silahkan masuk ke <#${CREATE_CHANNEL_ID}> lalu pilih game melalui menu dibawah ini.\n\n` +
-      "Jika ada masalah dengan Gaming Lounge. Silahkan hubungi **ADMIN/PENJAGA**.\n\n" +
-      "Marun - ©2018 BETLEHEM"
-    );
+// =======================
+// 🎨 EMBED HELPER
+// =======================
+function baseEmbed(guild) {
+  return new EmbedBuilder()
+    .setAuthor({ name: "BETLEHEM", iconURL: LOGO_URL })
+    .setFooter({ text: FOOTER_TEXT, iconURL: guild?.iconURL() || undefined })
+    .setTimestamp();
+}
 
+// =======================
+// 🔥 AUTO JOIN + AUTO REJOIN VC
+// =======================
+async function connectToVC() {
+  try {
+    const vc = await client.channels.fetch(AUTO_VC_ID).catch(() => null);
+    if (!vc || vc.type !== ChannelType.GuildVoice) {
+      return console.log("❌ VC tidak ditemukan");
+    }
+
+    const connection = joinVoiceChannel({
+      channelId: vc.id,
+      guildId: vc.guild.id,
+      adapterCreator: vc.guild.voiceAdapterCreator,
+      selfDeaf: false
+    });
+
+    console.log("🎤 Bot auto join VC");
+
+    connection.on(VoiceConnectionStatus.Disconnected, async () => {
+      try {
+        await Promise.race([
+          entersState(connection, VoiceConnectionStatus.Signalling, 5000),
+          entersState(connection, VoiceConnectionStatus.Connecting, 5000)
+        ]);
+      } catch {
+        console.log("🔄 Bot keluar VC, rejoin...");
+        try { connection.destroy(); } catch {}
+        setTimeout(connectToVC, 3000);
+      }
+    });
+  } catch (err) {
+    console.log("❌ Error join VC:", err);
+    setTimeout(connectToVC, 5000);
+  }
+}
+
+// =======================
+// 📦 PANEL (TIDAK NYAMPAH)
+// =======================
+function buildMenus() {
   const pcMenu = new StringSelectMenuBuilder()
-    .setCustomId(`pc_games_${Date.now()}`)
-    .setPlaceholder("PC Game List")
+    .setCustomId("pc_games")
+    .setPlaceholder("💻 PC Game List")
     .setMinValues(1)
     .setMaxValues(1)
     .addOptions([
@@ -101,8 +156,8 @@ async function sendPanel(channel) {
     ]);
 
   const mobileMenu = new StringSelectMenuBuilder()
-    .setCustomId(`mobile_games_${Date.now()}`)
-    .setPlaceholder("Mobile Game List")
+    .setCustomId("mobile_games")
+    .setPlaceholder("📱 Mobile Game List")
     .setMinValues(1)
     .setMaxValues(1)
     .addOptions([
@@ -122,69 +177,134 @@ async function sendPanel(channel) {
       { label: "Honor of Kings", value: "Honor of Kings", description: "Limit Room: 5 users", emoji: { id: "1488234145787154653" } }
     ]);
 
-  await channel.send({
-    embeds: [embed],
-    components: [
-      new ActionRowBuilder().addComponents(pcMenu),
-      new ActionRowBuilder().addComponents(mobileMenu)
-    ]
-  });
+  return [
+    new ActionRowBuilder().addComponents(pcMenu),
+    new ActionRowBuilder().addComponents(mobileMenu)
+  ];
 }
 
+function buildPanelEmbed(guild) {
+  return baseEmbed(guild)
+    .setColor("#FFD700")
+    .setTitle(PANEL_TITLE)
+    .setDescription(
+      "Menu ini digunakan untuk membuat **Gaming Lounge** pribadi kamu 🎮\n\n" +
+      "**📋 Cara Menggunakan**\n" +
+      `> **1.** Masuk ke voice <#${CREATE_CHANNEL_ID}>\n` +
+      "> **2.** Pilih game melalui menu di bawah\n" +
+      "> **3.** Room otomatis dibuat & kamu langsung dipindahkan ✨\n\n" +
+      "Room akan **terhapus otomatis** saat sudah kosong.\n" +
+      "Ada kendala? Hubungi **ADMIN/PENJAGA**."
+    );
+}
+
+async function sendOrUpdatePanel() {
+  const channel = await client.channels.fetch(PANEL_CHANNEL_ID).catch(() => null);
+  if (!channel) return console.log("❌ Channel panel tidak ditemukan");
+
+  // Cari panel lama milik bot di channel
+  const recent = await channel.messages.fetch({ limit: 100 }).catch(() => null);
+  const panels = recent
+    ? [...recent.filter(m =>
+        m.author.id === client.user.id &&
+        m.embeds[0]?.title === PANEL_TITLE
+      ).values()] // urut terbaru dulu
+    : [];
+
+  const panelMsg = panels[0] || null;
+
+  // Hapus panel duplikat yang numpuk
+  for (const m of panels.slice(1)) {
+    await m.delete().catch(() => {});
+    console.log(`🧹 Hapus panel duplikat ${m.id}`);
+  }
+
+  const payload = {
+    embeds: [buildPanelEmbed(channel.guild)],
+    components: buildMenus()
+  };
+
+  if (panelMsg) {
+    try {
+      await panelMsg.edit(payload);
+      console.log("♻️ Panel di-update");
+      return;
+    } catch {
+      console.log("⚠️ Gagal edit panel, kirim ulang");
+      await panelMsg.delete().catch(() => {});
+    }
+  }
+
+  await channel.send(payload);
+  console.log("✅ Panel dikirim");
+}
+
+// =======================
+// 🧹 BERSIHKAN ROOM KOSONG
+// =======================
+function isLoungeRoom(channel) {
+  return (
+    channel &&
+    channel.type === ChannelType.GuildVoice &&
+    channel.parentId === CATEGORY_ID &&
+    channel.id !== CREATE_CHANNEL_ID &&
+    channel.id !== AUTO_VC_ID &&
+    channel.name.startsWith(ROOM_PREFIX)
+  );
+}
+
+async function cleanupEmptyRooms() {
+  const category = await client.channels.fetch(CATEGORY_ID).catch(() => null);
+  if (!category) return;
+
+  for (const ch of category.children.cache.values()) {
+    if (isLoungeRoom(ch) && ch.members.size === 0) {
+      await ch.delete().catch(() => {});
+      console.log(`🧹 Hapus room kosong: ${ch.name}`);
+    }
+  }
+}
+
+// =======================
+// 🚀 READY
+// =======================
 client.once("clientReady", async () => {
   console.log(`Login sebagai ${client.user.tag}`);
 
-  const channel = await client.channels.fetch(PANEL_CHANNEL_ID);
-
-  if (channel) {
-    const messages = await channel.messages.fetch({ limit: 10 });
-
-    const botMessages = messages.filter(
-      msg => msg.author.id === client.user.id
-    );
-
-    await channel.bulkDelete(botMessages).catch(() => {});
-
-    sendPanel(channel);
-  }
+  setTimeout(connectToVC, 3000);
 
   try {
-    const guild = client.guilds.cache.first();
-
-    if (!guild) return;
-
-    const vc = guild.channels.cache.get(AUTO_VC_ID);
-
-    if (!vc || vc.type !== ChannelType.GuildVoice) return;
-
-    joinVoiceChannel({
-      channelId: vc.id,
-      guildId: guild.id,
-      adapterCreator: guild.voiceAdapterCreator,
-      selfDeaf: false
-    });
-
-    console.log("Bot auto join VC");
+    await sendOrUpdatePanel();
   } catch (err) {
-    console.log(err);
+    console.log("❌ Error setup panel:", err);
   }
+
+  // room sisa sebelum restart yang sudah kosong
+  await cleanupEmptyRooms().catch(() => {});
 });
 
+// =======================
+// 🎮 CREATE ROOM
+// =======================
 async function createRoom(member, game) {
   const limit = gameData[game] || 5;
 
   const channel = await member.guild.channels.create({
-    name: `🎮 ${game}`,
+    name: `${ROOM_PREFIX}${game}`,
     type: ChannelType.GuildVoice,
     parent: CATEGORY_ID,
     userLimit: limit
   });
 
   await member.voice.setChannel(channel);
-
   userSelectedGame.delete(member.id);
+
+  return channel;
 }
 
+// =======================
+// 🎯 DROPDOWN HANDLER
+// =======================
 client.on("interactionCreate", async interaction => {
   if (!interaction.isStringSelectMenu()) return;
 
@@ -195,43 +315,73 @@ client.on("interactionCreate", async interaction => {
 
   await interaction.deferUpdate();
 
+  // reset dropdown ke placeholder supaya bisa dipilih ulang
+  interaction.editReply({ components: buildMenus() }).catch(() => {});
+
   const game = interaction.values[0];
-
-  userSelectedGame.delete(interaction.user.id);
-
-  setTimeout(() => {
-    userSelectedGame.set(interaction.user.id, game);
-  }, 300);
+  const limit = gameData[game] || 5;
+  userSelectedGame.set(interaction.user.id, game);
 
   const member = await interaction.guild.members.fetch(interaction.user.id);
 
-  if (
-    member.voice.channel &&
-    member.voice.channel.id === CREATE_CHANNEL_ID
-  ) {
-    await createRoom(member, game);
+  // Sudah di voice "create" → langsung buat room
+  if (member.voice.channelId === CREATE_CHANNEL_ID) {
+    try {
+      const room = await createRoom(member, game);
 
-    return interaction.followUp({
-      embeds: [
-        new EmbedBuilder()
-          .setDescription(`🚀 Room **${game}** berhasil dibuat!`)
-      ],
-      ephemeral: true
-    });
+      return interaction.followUp({
+        embeds: [
+          baseEmbed(interaction.guild)
+            .setColor("#57F287")
+            .setTitle("🚀 ROOM BERHASIL DIBUAT")
+            .setThumbnail(interaction.user.displayAvatarURL())
+            .setDescription(
+              `> Hai **${member.displayName}**, room kamu sudah siap!\n\n` +
+              `**🎮 Game**\n> ${game}\n\n` +
+              `**🔊 Room**\n> <#${room.id}>\n\n` +
+              `**👥 Limit**\n> ${limit} users\n\n` +
+              "*Room terhapus otomatis saat sudah kosong.*"
+            )
+        ],
+        flags: MessageFlags.Ephemeral
+      });
+    } catch (err) {
+      console.log("❌ Gagal buat room:", err.message);
+      return interaction.followUp({
+        embeds: [
+          baseEmbed(interaction.guild)
+            .setColor("#ED4245")
+            .setTitle("⚠️ Gagal Membuat Room")
+            .setDescription("> Terjadi kendala saat membuat room.\n> Silahkan hubungi **ADMIN/PENJAGA** ya.")
+        ],
+        flags: MessageFlags.Ephemeral
+      });
+    }
   }
 
+  // Belum di voice "create" → simpan pilihan, suruh masuk
   await interaction.followUp({
     embeds: [
-      new EmbedBuilder()
+      baseEmbed(interaction.guild)
+        .setColor("#FFD700")
+        .setTitle("✅ GAME DIPILIH")
+        .setThumbnail(interaction.user.displayAvatarURL())
         .setDescription(
-          `✅ Game dipilih: **${game}**\nMasuk ke <#${CREATE_CHANNEL_ID}>`
+          `> Hai **${member.displayName}**, pilihan kamu sudah disimpan!\n\n` +
+          `**🎮 Game**\n> ${game}\n\n` +
+          `**👥 Limit**\n> ${limit} users\n\n` +
+          `**➡️ Langkah Selanjutnya**\n> Masuk ke voice <#${CREATE_CHANNEL_ID}>, room akan dibuat otomatis ✨`
         )
     ],
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 });
 
+// =======================
+// 🔊 VOICE HANDLER
+// =======================
 client.on("voiceStateUpdate", async (oldState, newState) => {
+  // Masuk ke voice "create" → buat room kalau sudah pilih game
   if (
     newState.channelId === CREATE_CHANNEL_ID &&
     oldState.channelId !== CREATE_CHANNEL_ID
@@ -239,21 +389,27 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
     const game = userSelectedGame.get(newState.member.id);
 
     if (game) {
-      await createRoom(newState.member, game);
+      await createRoom(newState.member, game).catch(err =>
+        console.log("❌ Gagal buat room:", err.message)
+      );
     }
   }
 
-  if (
-    oldState.channel &&
-    oldState.channel.id !== CREATE_CHANNEL_ID &&
-    oldState.channel.parentId === CATEGORY_ID
-  ) {
+  // Keluar dari room lounge → hapus kalau kosong
+  const oldChannel = oldState.channel;
+  if (isLoungeRoom(oldChannel) && oldState.channelId !== newState.channelId) {
     setTimeout(() => {
-      if (oldState.channel.members.size === 0) {
-        oldState.channel.delete().catch(() => {});
+      if (oldChannel.members.size === 0) {
+        oldChannel.delete().catch(() => {});
       }
     }, 3000);
   }
 });
+
+// =======================
+// 🛡️ ANTI CRASH
+// =======================
+process.on("unhandledRejection", err => console.log("Unhandled Rejection:", err));
+process.on("uncaughtException", err => console.log("Uncaught Exception:", err));
 
 client.login(TOKEN);
